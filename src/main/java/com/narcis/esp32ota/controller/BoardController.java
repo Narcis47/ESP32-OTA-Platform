@@ -74,6 +74,14 @@ public class BoardController {
         return ResponseEntity.ok("OK");
     }
 
+    @GetMapping("/my")
+    public ResponseEntity<List<Board>> getBoardsByApiToken(
+            @RequestHeader("X-API-TOKEN") String apiToken) {
+        var user = userService.getUserByApiToken(apiToken);
+        if (user.isEmpty()) return ResponseEntity.status(401).build();
+        return ResponseEntity.ok(boardService.getBoardsByUserId(user.get().getId()));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteBoard(@PathVariable Long id, @RequestHeader("Authorization") String authHeader){
         Long userId = jwtService.extractUserId(authHeader.substring(7));

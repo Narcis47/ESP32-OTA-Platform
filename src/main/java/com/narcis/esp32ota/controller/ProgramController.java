@@ -4,6 +4,7 @@ import com.narcis.esp32ota.JwtService;
 import com.narcis.esp32ota.model.Board;
 import com.narcis.esp32ota.model.Program;
 import com.narcis.esp32ota.service.BoardService;
+import com.narcis.esp32ota.service.CompilerService;
 import com.narcis.esp32ota.service.ProgramService;
 import com.narcis.esp32ota.service.UserService;
 import org.springframework.http.ResponseEntity;
@@ -19,14 +20,16 @@ public class ProgramController {
     private final BoardService boardService;
     private final UserService userService;
     private final JwtService jwtService;
+    private final CompilerService compilerService;
     public record UploadProgramRecord(Long boardId, String name, String code) {}
     public record UpdateStatusRecord(String status) {}
 
-    public ProgramController(ProgramService programService, BoardService boardService, UserService userService, JwtService jwtService) {
+    public ProgramController(ProgramService programService, BoardService boardService, UserService userService, JwtService jwtService, CompilerService compilerService) {
         this.programService = programService;
         this.boardService = boardService;
         this.userService = userService;
         this.jwtService = jwtService;
+        this.compilerService = compilerService;
     }
 
     @PostMapping("/upload")
@@ -93,5 +96,27 @@ public class ProgramController {
 
         programService.deleteProgram(id);
         return ResponseEntity.ok("Program deleted!");
+    }
+
+    @GetMapping("/{id}/bin")
+    public ResponseEntity<byte[]> getBin(@PathVariable Long id, @RequestHeader("X-API-TOKEN") String apiToken) {
+        var user = userService.getUserByApiToken(apiToken);
+        if (user.isEmpty()) return ResponseEntity.status(401).build();
+
+        Optional<Program> program = programService.getProgramById(id);
+        if (program.isEmpty()) return ResponseEntity.notFound().build();
+
+        try {
+            byte[] bin = compilerService.compile(id, program.get().getCode());
+            compilerService.cleanup(id);
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/octet-stream")
+                    .body(bin);
+        } catch (Exception e) {
+            programService.updateProgramStatus(id, "FAILED");
+            return ResponseEntity.status(400)
+                    .header("Content-Type", "text/plain")
+                    .body(e.getMessage().getBytes());
+        }
     }
 }

@@ -31,6 +31,8 @@ public class ProgramService {
 
     public Optional<Program> getPendingProgram(Long boardId) {return programRepository.findByBoardIdAndStatus(boardId, "PENDING");}
 
+    public Optional<Program> getProgramById(Long id) {return programRepository.findById(id);}
+
     public List<Program> getProgramsByBoardId(Long boardId){return programRepository.findByBoardId(boardId);}
 
     public List<Program> getProgramsByUserId(Long userId){return programRepository.findByUserId(userId);}

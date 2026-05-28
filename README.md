@@ -304,16 +304,10 @@ Swagger UI at `http://localhost:8083/swagger-ui/index.html`
 
 ### 🔄 Phase 9 — Deploy
 - [ ] Serveo tunnel port 8083
-- [ ] Added to start.bat
 - [ ] Demo video
 
 ---
 
-## 🤖 AI Assistance
-
-This project was developed with the assistance of Claude AI (Anthropic) for code review, architecture decisions, and debugging.
-
----
 
 ## 📄 License
 

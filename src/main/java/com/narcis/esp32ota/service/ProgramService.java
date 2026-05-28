@@ -29,8 +29,12 @@ public class ProgramService {
         return true;
     }
 
-    public Optional<Program> getPendingProgram(Long boardId) {return programRepository.findByBoardIdAndStatus(boardId, "PENDING");}
-
+    public Optional<Program> getPendingProgram(Long boardId) {
+        return programRepository.findByBoardId(boardId)
+                .stream()
+                .filter(p -> !p.getStatus().equals("DONE") && !p.getStatus().equals("FAILED"))
+                .findFirst();
+    }
     public Optional<Program> getProgramById(Long id) {return programRepository.findById(id);}
 
     public List<Program> getProgramsByBoardId(Long boardId){return programRepository.findByBoardId(boardId);}

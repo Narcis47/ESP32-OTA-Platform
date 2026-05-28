@@ -10,4 +10,5 @@ public interface ProgramRepository extends CrudRepository<Program, Long> {
     List<Program> findByBoardId (Long boardId);
     List<Program> findByUserId (Long userId);
     Optional<Program> findByBoardIdAndStatus (Long boardId, String status);
+    Optional<Program> findTopByBoardIdOrderByCreatedAtDesc(Long boardId);
 }

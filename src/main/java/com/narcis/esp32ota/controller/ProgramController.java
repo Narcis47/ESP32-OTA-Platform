@@ -36,13 +36,17 @@ public class ProgramController {
     public ResponseEntity<String> uploadProgram(@RequestHeader("Authorization") String authHeader, @RequestBody UploadProgramRecord record){
         Long userId = jwtService.extractUserId(authHeader.substring(7));
         Optional<Board> board = boardService.getBoardById(record.boardId());
-        if (board.isEmpty()){return ResponseEntity.notFound().build();}
+        if (board.isEmpty()) return ResponseEntity.notFound().build();
         if (!board.get().getUserId().equals(userId)) {
-            return ResponseEntity.status(403).body("You can only upload to your own boards!");
+            return ResponseEntity.status(403).body("Forbidden!");
         }
 
         programService.uploadProgram(record.boardId(), userId, record.name(), record.code());
-        return ResponseEntity.ok("Program uploaded successfully!");
+
+        Optional<Program> program = programService.getLatestProgramByBoardId(record.boardId());
+        program.ifPresent(p -> compilerService.compileAsync(p.getId(), p.getCode(), programService));
+
+        return ResponseEntity.accepted().body("Program uploaded! Compiling...");
     }
 
     @GetMapping("/pending/{boardId}")
@@ -99,24 +103,25 @@ public class ProgramController {
     }
 
     @GetMapping("/{id}/bin")
-    public ResponseEntity<byte[]> getBin(@PathVariable Long id, @RequestHeader("X-API-TOKEN") String apiToken) {
+    public ResponseEntity<?> getBin(@PathVariable Long id, @RequestHeader("X-API-TOKEN") String apiToken) {
         var user = userService.getUserByApiToken(apiToken);
         if (user.isEmpty()) return ResponseEntity.status(401).build();
 
         Optional<Program> program = programService.getProgramById(id);
         if (program.isEmpty()) return ResponseEntity.notFound().build();
 
+        if (!"COMPILED".equals(program.get().getStatus())) {
+            return ResponseEntity.status(425).body("Not compiled yet! Status: " + program.get().getStatus());
+        }
+
         try {
-            byte[] bin = compilerService.compile(id, program.get().getCode());
-            compilerService.cleanup(id);
+            byte[] bin = compilerService.getBin(id);
             return ResponseEntity.ok()
                     .header("Content-Type", "application/octet-stream")
+                    .header("Content-Disposition", "attachment; filename=firmware.bin")
                     .body(bin);
         } catch (Exception e) {
-            programService.updateProgramStatus(id, "FAILED");
-            return ResponseEntity.status(400)
-                    .header("Content-Type", "text/plain")
-                    .body(e.getMessage().getBytes());
+            return ResponseEntity.status(500).body(e.getMessage());
         }
     }
 }

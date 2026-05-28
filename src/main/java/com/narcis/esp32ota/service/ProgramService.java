@@ -37,6 +37,8 @@ public class ProgramService {
 
     public List<Program> getProgramsByUserId(Long userId){return programRepository.findByUserId(userId);}
 
+    public Optional<Program> getLatestProgramByBoardId(Long boardId) {return programRepository.findTopByBoardIdOrderByCreatedAtDesc(boardId);}
+
     public boolean updateProgramStatus(Long id, String status){
         Optional<Program> program = programRepository.findById(id);
         if (program.isPresent()){
@@ -55,5 +57,4 @@ public class ProgramService {
         }
         return false;
     }
-
 }
